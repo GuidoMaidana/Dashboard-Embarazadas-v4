@@ -30,7 +30,7 @@
   --bg:#f2f2f2; --bg-soft:#e7e7e7; --panel:#ffffff; --panel-2:#f7f7f7;
   --ink:#1b1b1b; --ink-soft:#3b3b3b; --muted:#666666; --line:#dedede;
   --accent:#1e7a4d; --accent-soft:#e6f3eb; --accent-ink:#0d5a36;
-  --slate:#6b7280; --warn:#d97706;
+  --slate:#6b7280;
   --chart-1:#1e7a4d; --chart-2:#2563eb; --chart-3:#d97706; --chart-4:#b91c1c;
   --chart-5:#0f766e; --chart-6:#6b7280;
   --shadow:0 4px 18px rgba(0,0,0,.06);
@@ -40,7 +40,7 @@
   --bg:#111111; --bg-soft:#181818; --panel:#1c1c1c; --panel-2:#232323;
   --ink:#ededed; --ink-soft:#c8c8c8; --muted:#9a9a9a; --line:#303030;
   --accent:#63c08f; --accent-soft:#1b3527; --accent-ink:#c3ecd5;
-  --slate:#a3a3a3; --warn:#f2a65a;
+  --slate:#a3a3a3;
   --chart-1:#63c08f; --chart-2:#7aa7f7; --chart-3:#f2b45c; --chart-4:#f08a85;
   --chart-5:#5ec8bb; --chart-6:#a3a3a3;
   --shadow:0 6px 22px rgba(0,0,0,.4);
@@ -94,12 +94,15 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 .note{font-size:12px;color:var(--muted);margin-bottom:12px}
 .contextnote{position:relative}
 .tipwrap{display:inline-flex;align-items:center;margin-left:7px;vertical-align:middle}
-.tiptrigger{display:inline-flex;align-items:center;gap:4px;height:23px;padding:0 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel-2);color:var(--ink-soft);font:inherit;font-size:11px;font-weight:750;line-height:1;cursor:help}
+.tiptrigger{display:inline-flex;align-items:center;gap:4px;height:23px;padding:0 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel-2);color:var(--ink-soft);font:inherit;font-size:11px;font-weight:750;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;cursor:help}
 .tiptrigger:hover,.tiptrigger:focus-visible{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
 .tiptrigger svg{width:12px;height:12px;flex:none}
-.tip{position:absolute;left:0;top:calc(100% + 6px);z-index:30;width:min(440px,100%);padding:11px 13px;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);font-size:12px;font-weight:400;line-height:1.55;color:var(--ink-soft);text-align:left;opacity:0;visibility:hidden;transform:translateY(-4px);transition:transform .15s;pointer-events:none}
+.tiptrigger.icon{width:24px;height:24px;padding:0;justify-content:center;border-radius:50%}
+.tip{position:absolute;left:0;top:calc(100% + 6px);z-index:30;width:min(320px,calc(100vw - 58px));padding:11px 13px;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);font-size:12px;font-weight:400;line-height:1.55;letter-spacing:normal;text-transform:none;color:var(--ink-soft);text-align:left;opacity:0;visibility:hidden;transform:translateY(-4px);transition:transform .15s;pointer-events:none}
 .tip b{color:var(--ink)}
 .tipwrap:hover .tip,.tipwrap:focus-within .tip{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
+.kpi.tip-host{position:relative}
+.kpi .tip{left:17px}
 .chart{height:300px;position:relative}
 .wide{grid-column:1/-1}
 .detailcard h2{margin:0;font-size:16px}
@@ -137,10 +140,11 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 .table tbody tr:hover{background:var(--panel-2)}
 .empty{text-align:center;color:var(--muted);padding:25px;white-space:normal}
 
-/* ---------- Pie de página ---------- */
-.footgrid{display:grid;grid-template-columns:1.25fr 1fr 1.1fr;gap:28px}
-.footgrid h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin:0 0 10px}
-.footgrid p{margin:0 0 10px;font-size:13px;color:var(--ink-soft);line-height:1.6}
+/* ---------- Proyecto y metodología ---------- */
+.methodgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px 32px;margin-top:16px}
+.methodgrid h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin:0 0 8px}
+.methodgrid p,.methodgrid ul:not(.links):not(.people) li{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:0 0 8px}
+.methodgrid ul:not(.links):not(.people){margin:0;padding-left:18px}
 .grupo{font-size:15px;font-weight:800;color:var(--ink);line-height:1.4;margin-bottom:10px}
 .people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .people li{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:650;color:var(--ink)}
@@ -170,7 +174,6 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 .k4{grid-template-columns:repeat(4,1fr)}
 .sechead{margin:18px 2px 8px;font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
 .sechead small{font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:6px}
-.kpi.warn{border-color:var(--warn)}
 .heat{border-collapse:separate;border-spacing:0;font-size:12px}
 .heat th,.heat td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
 .heat th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-size:10px;text-transform:uppercase;z-index:2}
@@ -179,12 +182,6 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 .heat td.c{min-width:44px}.heat td.e{color:var(--muted);opacity:.5}
 .heat td.s{color:var(--ink-soft);background:var(--panel-2)}
 .method{margin-top:22px;padding:22px}
-.method .footgrid{margin-top:16px;padding-bottom:20px;border-bottom:1px solid var(--line)}
-.method .mgrid{margin-top:20px}
-.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;margin-top:12px}
-.mgrid h3{font-size:13px;margin:0 0 6px;color:var(--accent)}
-.mgrid p,.mgrid li{font-size:12.5px;line-height:1.6;color:var(--ink-soft);margin:0 0 6px}
-.mgrid ul{margin:0;padding-left:18px}
 .todo{background:var(--accent-soft);color:var(--accent-ink);padding:1px 6px;border-radius:4px;font-weight:700}
 .clu span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:#fff;font-weight:800;font-size:12px;border:3px solid rgba(255,255,255,.7);box-shadow:0 1px 6px rgba(0,0,0,.35)}
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.k4{grid-template-columns:repeat(2,1fr)}}
@@ -192,10 +189,9 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
   .filters{grid-template-columns:1fr 1fr}
   .grid{grid-template-columns:1fr}
   .wide{grid-column:auto}
-  .footgrid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:650px){
-  .mgrid{grid-template-columns:1fr}
+  .methodgrid{grid-template-columns:1fr;gap:22px}
   .wrap{padding:15px}
   .top{align-items:flex-start;flex-direction:column}
   .kpis{grid-template-columns:1fr 1fr}
@@ -204,7 +200,6 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
   .mapwrap{height:430px}
   .kpi .num{font-size:22px}
   h1{font-size:24px}
-  .footgrid{grid-template-columns:1fr;gap:22px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -249,9 +244,20 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 
 <div class="sechead">Lectura del período <small>respetan los filtros de SAPS y edad</small></div>
 <section class="kpis k4" aria-label="Indicadores derivados">
-  <div class="panel kpi warn"><div class="lbl">Caída mar–jun (ASPO)</div><div class="num" id="dAspo">—</div><div class="hint" id="dAspoH"></div></div>
+  <div class="panel kpi"><div class="lbl">Caída mar–jun (ASPO)</div><div class="num" id="dAspo">—</div><div class="hint" id="dAspoH"></div></div>
   <div class="panel kpi"><div class="lbl">Recuperación jul–sep</div><div class="num" id="dRec">—</div><div class="hint" id="dRecH"></div></div>
-  <div class="panel kpi"><div class="lbl">SAPS que informan</div><div class="num" id="dRep">—</div><div class="hint" id="dRepH"></div></div>
+  <div class="panel kpi tip-host">
+    <div class="lbl">SAPS que informan
+      <span class="tipwrap">
+        <button class="tiptrigger icon" type="button" aria-label="Qué significa SAPS que informan" aria-describedby="sapsInfoTip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        </button>
+        <span class="tip" role="tooltip" id="sapsInfoTip">Cuenta los SAPS que registraron al menos una consulta en el mes (no la cantidad de consultas). El primer valor corresponde al primer mes de la selección y el segundo al último (por defecto, enero y septiembre de 2020). Si un SAPS no aparece, pudo no haber informado datos; no implica que no haya atendido.</span>
+      </span>
+    </div>
+    <div class="num" id="dRep">—</div>
+    <div class="hint" id="dRepH"></div>
+  </div>
   <div class="panel kpi"><div class="lbl">Adolescentes (12–20)</div><div class="num" id="dTeen">—</div><div class="hint" id="dTeenH"></div></div>
 </section>
 
@@ -260,9 +266,8 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
     <h2>Evolución de consultas</h2>
     <div class="note contextnote">Cantidad mensual de consultas dentro de los filtros seleccionados.
       <span class="tipwrap">
-        <button class="tiptrigger" type="button" aria-describedby="aspoTip">
+        <button class="tiptrigger icon" type="button" aria-label="Contexto del gráfico de evolución" aria-describedby="aspoTip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-          Contexto
         </button>
         <span class="tip" role="tooltip" id="aspoTip">La banda gris marca el <b>ASPO</b> (aislamiento obligatorio, desde el 20/03/2020). El descenso de marzo coincide con la pandemia, pero también con una caída de los SAPS que cargaron datos (<b>línea punteada</b>): con estos datos no se puede separar un efecto del otro.</span>
       </span>
@@ -357,12 +362,14 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 <section class="panel method" id="metodologia" aria-label="Metodología y proyecto">
   <h2 style="margin:0;font-size:18px">Metodología y proyecto</h2>
   <p class="note" style="margin:6px 0 0">Limpieza de anomalías: se quitaron 6 filas duplicadas exactas y 1 fila vacía sin rango etario. Los recuadros de cobertura del dato se removieron porque repetían totales ya visibles o mostraban valores en cero.</p>
-  <div class="footgrid">
+  <div class="methodgrid">
     <div>
       <h3>Sobre el proyecto</h3>
       <div class="grupo">Atención médica de embarazadas y cobertura de centros de salud</div>
       <p>Trabajo de análisis sobre datos abiertos publicados por la Municipalidad de la Ciudad de Corrientes.</p>
-      <h3 style="margin-top:18px">Integrantes</h3>
+    </div>
+    <div>
+      <h3>Integrantes</h3>
       <ul class="people">
         <li><span class="avatar" aria-hidden="true">DD</span>Daniel Dure</li>
         <li><span class="avatar" aria-hidden="true">MG</span>Maidana Guido</li>
@@ -374,37 +381,49 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
       <p>Permite observar qué edades concentran más consultas, cómo evoluciona la atención a lo largo del tiempo y dónde se ubican los centros disponibles.</p>
     </div>
     <div>
-      <h3>Fuentes y fecha</h3>
+      <h3>Fuentes</h3>
       <ul class="links">
         <li><a href="https://datos.ciudaddecorrientes.gov.ar/dataset/atencion_embarazadas" target="_blank" rel="noopener noreferrer">Atención de embarazadas — Datos Abiertos, Ciudad de Corrientes</a></li>
         <li><a href="https://datos.ciudaddecorrientes.gov.ar/dataset/centros-de-salud" target="_blank" rel="noopener noreferrer">Centros de salud — Datos Abiertos, Ciudad de Corrientes</a></li>
       </ul>
-      <p style="margin:12px 0 6px;font-size:12px">Datos descargados del Portal de Datos Abiertos de la Ciudad de Corrientes el <b>29/08/2026</b>.</p>
-      <p style="margin:0;font-size:12px">Cartografía base: Esri (calles y satélite), OpenStreetMap y OpenTopoMap, sin claves de API. Los puntos representan únicamente las coordenadas presentes en los archivos publicados.</p>
+      <p style="margin:12px 0 6px">Datos descargados del Portal de Datos Abiertos de la Ciudad de Corrientes el <b>29/08/2026</b>.</p>
+      <p style="margin:0">Cartografía base: Esri (calles y satélite), OpenStreetMap y OpenTopoMap, sin claves de API. Los puntos representan únicamente las coordenadas presentes en los archivos publicados.</p>
     </div>
-  </div>
-  <div class="mgrid">
-    <div><h3>1 · Qué se transformó</h3><ul>
-      <li>Limpieza de las 7 planillas de origen: 214 filas → 207 (se quitaron 6 filas duplicadas exactas y 1 fila vacía sin rango etario); 1.455 → 1.420 consultas. Una fila es un agregado mensual, no una consulta individual.</li>
-      <li>Nombres unificados en la base: «DR. BLUGERMAN» y «DR. PEDRO BLUGERMAN» pasan a ser un mismo SAPS. 31 nombres en la fuente → 30 SAPS (nombre canónico con numeral romano y barrio).</li>
-      <li>Numeral corregido: la fuente repetía «XXXIII» en Sussini; por secuencia corresponde a SAP XXXII.</li>
-      <li>Texto normalizado: tildes y mayúsculas, rangos etarios («16-20 años»), meses, direcciones y abreviaturas.</li>
-      <li>Cada establecimiento tiene su área programática (I/II/III), asignada por punto-en-polígono sobre los polígonos oficiales.</li>
-      <li>El cruce entre consultas y establecimientos ahora es directo: los nombres canónicos coinciden exactamente (ya no se usan alias ni similitud de palabras).</li></ul></div>
-    <div><h3>2 · Cómo se calcula cada número</h3><ul>
-      <li>Promedio mensual = consultas ÷ meses con registros en la selección (1.420 ÷ 9 = 158).</li>
-      <li>Porcentaje etario = consultas del rango ÷ total filtrado (21–39: 1.077 ÷ 1.420 ≈ 76%).</li>
-      <li>Ranking: los 10 SAPS con más consultas de la selección.</li>
-      <li>Caída = promedio mensual mar–jun ÷ promedio ene–feb − 1. Recuperación = promedio jul–sep ÷ promedio ene–feb.</li>
-      <li>SAPS que informan = SAPS con al menos una consulta en el mes. Adolescentes = (12–15 + 16–20) ÷ total.</li></ul></div>
-    <div><h3>3 · Supuestos</h3>
-      <p>Cada fila es un agregado mensual por SAPS y rango etario, no una consulta individual. Las filas repetidas idénticas se consideran errores de carga (se conserva una) y la fila sin rango etario se descartó. Se asume que la ausencia de fila en un mes significa que el SAPS no informó, no que no atendió. El ASPO rige desde el 20/03/2020 (DNU 297/2020); la banda del gráfico se extiende hasta el final de la serie.</p></div>
-    <div><h3>4 · Límites</h3><ul>
-      <li>Solo enero–septiembre de 2020.</li>
-      <li>La caída de marzo mezcla ASPO y menor cantidad de SAPS que informan; no se pueden separar.</li>
-      <li>No se verificó si el archivo cubre todas las consultas de la capital: 158 por mes es poco y el portal no lo aclara. Que informen menos SAPS con los meses sugiere carga parcial.</li>
-      <li>Los 30 SAPS con consultas tienen coordenadas y se muestran en el mapa.</li>
-      <li>Las fuentes no traen población ni barrios, por lo que no se calcularon consultas por 1.000 mujeres en edad fértil ni población a menos de 1 km de un SAPS.</li></ul></div>
+    <div>
+      <h3>Transformaciones</h3>
+      <ul>
+        <li>Limpieza de las 7 planillas de origen: 214 filas → 207 (se quitaron 6 filas duplicadas exactas y 1 fila vacía sin rango etario); 1.455 → 1.420 consultas. Una fila es un agregado mensual, no una consulta individual.</li>
+        <li>Nombres unificados en la base: «DR. BLUGERMAN» y «DR. PEDRO BLUGERMAN» pasan a ser un mismo SAPS. 31 nombres en la fuente → 30 SAPS (nombre canónico con numeral romano y barrio).</li>
+        <li>Numeral corregido: la fuente repetía «XXXIII» en Sussini; por secuencia corresponde a SAP XXXII.</li>
+        <li>Texto normalizado: tildes y mayúsculas, rangos etarios («16-20 años»), meses, direcciones y abreviaturas.</li>
+        <li>Cada establecimiento tiene su área programática (I/II/III), asignada por punto-en-polígono sobre los polígonos oficiales.</li>
+        <li>El cruce entre consultas y establecimientos ahora es directo: los nombres canónicos coinciden exactamente (ya no se usan alias ni similitud de palabras).</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Cálculos</h3>
+      <ul>
+        <li>Promedio mensual = consultas ÷ meses con registros en la selección (1.420 ÷ 9 = 158).</li>
+        <li>Porcentaje etario = consultas del rango ÷ total filtrado (21–39: 1.077 ÷ 1.420 ≈ 76%).</li>
+        <li>Ranking: los 10 SAPS con más consultas de la selección.</li>
+        <li>Caída = promedio mensual mar–jun ÷ promedio ene–feb − 1. Recuperación = promedio jul–sep ÷ promedio ene–feb.</li>
+        <li>SAPS que informan = SAPS con al menos una consulta en el mes. Adolescentes = (12–15 + 16–20) ÷ total.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Supuestos</h3>
+      <p>Cada fila es un agregado mensual por SAPS y rango etario, no una consulta individual. Las filas repetidas idénticas se consideran errores de carga (se conserva una) y la fila sin rango etario se descartó. Se asume que la ausencia de fila en un mes significa que el SAPS no informó, no que no atendió. El ASPO rige desde el 20/03/2020 (DNU 297/2020); la banda del gráfico se extiende hasta el final de la serie.</p>
+    </div>
+    <div>
+      <h3>Límites</h3>
+      <ul>
+        <li>Solo enero–septiembre de 2020.</li>
+        <li>La caída de marzo mezcla ASPO y menor cantidad de SAPS que informan; no se pueden separar.</li>
+        <li>No se verificó si el archivo cubre todas las consultas de la capital: 158 por mes es poco y el portal no lo aclara. Que informen menos SAPS con los meses sugiere carga parcial.</li>
+        <li>Los 30 SAPS con consultas tienen coordenadas y se muestran en el mapa.</li>
+        <li>Las fuentes no traen población ni barrios, por lo que no se calcularon consultas por 1.000 mujeres en edad fértil ni población a menos de 1 km de un SAPS.</li>
+      </ul>
+    </div>
   </div>
   <div class="footbar">
     <span>Dashboard de Salud Materna · Ciudad de Corrientes</span>
@@ -726,7 +745,7 @@ function renderDerived() {
       .map(function (x) { return x.saps; })).size;
   }
   $('dRep').textContent = ms.length ? nRep(ms[0]) + ' → ' + nRep(ms[ms.length - 1]) : '—';
-  $('dRepH').textContent = ms.length ? mesCorto(ms[0]) + ' vs ' + mesCorto(ms[ms.length - 1]) + ' (SAPS con consultas)' : '';
+  $('dRepH').textContent = ms.length ? mesCorto(ms[0]) + ' vs ' + mesCorto(ms[ms.length - 1]) + ' · SAPS con datos' : '';
   var tot = sum(rows), teen = sum(rows.filter(function (x) { return Number(x.edad_min) <= 20; }));
   $('dTeen').textContent = tot ? (teen / tot * 100).toFixed(0) + '%' : '—';
   $('dTeenH').textContent = tot ? fmt(teen) + ' de ' + fmt(tot) + ' consultas' : 'sin consultas';
