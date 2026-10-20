@@ -52,15 +52,17 @@ data.js se regenera desde la base limpia (antes tenía los datos crudos incrusta
 - Mapa: las capas base cargan teselas en todo el recuadro visible (incluido el estado
   «Centrar»), sin franjas vacías en los bordes.
 - Paleta visual: fondos y bordes grises, acento verde institucional y gráficos con
-  colores variados para distinguir mejor las series. La tarjeta de alerta de caída
-  mar–jun lleva borde naranja.
+  colores variados para distinguir mejor las series. La tarjeta de caída mar–jun ya
+  no lleva borde naranja: todas las tarjetas usan el mismo borde gris.
 - Mapa: SAPS en verde; CAPS en azul, hospitales en rojo, centros privados en naranja
   y áreas programáticas en gris, para diferenciarlos de un vistazo.
 - Se redujo el redondeo de las esquinas de paneles, tarjetas, controles y tablas.
-- «Metodología» y los datos del proyecto (objetivos, fuentes e integrantes) se unificaron
-  en una sola sección.
-- «Fuentes de datos» y la fecha de descarga (29/08/2026) quedaron unificadas en
-  «Metodología y proyecto».
+- «Metodología» y los datos del proyecto se unificaron en una sola grilla, sin numeración
+  ni separaciones internas. Orden: Sobre el proyecto, Integrantes, Objetivos, Fuentes,
+  Transformaciones, Cálculos, Supuestos y Límites.
+- La sección «Fuentes» conserva la fecha de descarga (29/08/2026) y los enlaces oficiales.
+- «SAPS que informan» incorpora un tooltip que explica qué mide y cómo interpretarlo.
+  Ambos tooltips usan botones solo con ícono y comparten ancho, tipografía y estilo visual.
 - Se quitaron los recuadros de «Cobertura del dato» (Consultas registradas, SAPS con
   datos, SAPS sin coordenadas y Edad «Sin dato»): repetían totales ya visibles o
   mostraban valores en cero.
@@ -68,7 +70,8 @@ data.js se regenera desde la base limpia (antes tenía los datos crudos incrusta
   generacion/ dentro del dashboard.
 - Se simplificaron el estado superior y el pie: ya no muestran cantidad de registros ni
   fecha de reprocesamiento.
-- El contexto del ASPO del gráfico de evolución quedó como tooltip del botón «Contexto».
+- El contexto del ASPO del gráfico de evolución quedó como tooltip de un botón de
+  información sin texto, identificado por su ícono y su etiqueta accesible.
 - «Detalle de consultas» se movió debajo del mapa y ahora es un acordeón cerrado por
   defecto, pensado para consultas específicas.
 
