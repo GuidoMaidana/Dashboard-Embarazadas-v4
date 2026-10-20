@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Salud materna · Ciudad de Corrientes</title>
+<meta name="description" content="Dashboard de consultas médicas de embarazadas y cobertura de centros de salud en la ciudad de Corrientes.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f2f2f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin="">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+/* Tema aplicado antes del primer pintado para evitar el parpadeo blanco. */
+(function () {
+  var mode = 'auto';
+  try { mode = localStorage.getItem('dc-theme') || 'auto'; } catch (e) {}
+  var dark = mode === 'dark' || (mode === 'auto' && window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-mode', mode);
+})();
+</script>
+<style>
+/* Paleta: neutros grises, acento verde institucional y colores variados para los gráficos. */
+:root{
+  --bg:#f2f2f2; --bg-soft:#e7e7e7; --panel:#ffffff; --panel-2:#f7f7f7;
+  --ink:#1b1b1b; --ink-soft:#3b3b3b; --muted:#666666; --line:#dedede;
+  --accent:#1e7a4d; --accent-soft:#e6f3eb; --accent-ink:#0d5a36;
+  --slate:#6b7280; --warn:#d97706;
+  --chart-1:#1e7a4d; --chart-2:#2563eb; --chart-3:#d97706; --chart-4:#b91c1c;
+  --chart-5:#0f766e; --chart-6:#6b7280;
+  --shadow:0 4px 18px rgba(0,0,0,.06);
+  --grid:rgba(100,100,100,.18);
+}
+:root[data-theme="dark"]{
+  --bg:#111111; --bg-soft:#181818; --panel:#1c1c1c; --panel-2:#232323;
+  --ink:#ededed; --ink-soft:#c8c8c8; --muted:#9a9a9a; --line:#303030;
+  --accent:#63c08f; --accent-soft:#1b3527; --accent-ink:#c3ecd5;
+  --slate:#a3a3a3; --warn:#f2a65a;
+  --chart-1:#63c08f; --chart-2:#7aa7f7; --chart-3:#f2b45c; --chart-4:#f08a85;
+  --chart-5:#5ec8bb; --chart-6:#a3a3a3;
+  --shadow:0 6px 22px rgba(0,0,0,.4);
+  --grid:rgba(160,160,160,.2);
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s ease,color .25s ease;
+}
+.wrap{max-width:1440px;margin:auto;padding:26px 26px calc(26px + env(safe-area-inset-bottom,0px))}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:12px;top:12px;z-index:9999;background:var(--panel);padding:10px 14px;border-radius:6px;border:1px solid var(--line)}
+
+.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
+.sub{color:var(--muted);font-size:14px;max-width:62ch}
+.topright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status{padding:9px 12px;border:1px solid var(--line);background:var(--panel);border-radius:8px;font-size:12px;font-weight:700;color:var(--ink-soft)}
+.themebtn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;transition:background .2s,border-color .2s}
+.themebtn:hover{border-color:var(--accent)}
+.themebtn svg{width:15px;height:15px;display:block}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
+.filters{padding:14px;display:grid;grid-template-columns:1.3fr 1fr 1fr auto auto;gap:12px;margin-bottom:16px;align-items:end}
+.field label{display:block;font-size:11px;font-weight:800;color:var(--muted);margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.field select{width:100%;height:40px;border:1px solid var(--line);border-radius:6px;padding:0 30px 0 11px;color:var(--ink);background-color:var(--panel-2);font-size:14px;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 17px,calc(100% - 12px) 17px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.btn{height:40px;border:1px solid transparent;border-radius:6px;background:var(--accent-soft);color:var(--accent-ink);font-weight:800;padding:0 15px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn.ghost{background:var(--panel-2);color:var(--ink-soft);border-color:var(--line)}
+.btn:hover{filter:brightness(1.05)}
+
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.kpi{padding:17px}
+.kpi .lbl{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.kpi .num{font-size:26px;font-weight:800;margin-top:5px;letter-spacing:-.5px}
+.kpi .num.sm{font-size:18px}
+.kpi .hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+.card{padding:18px;min-width:0}
+.card h2{font-size:16px;margin:0 0 4px}
+.note{font-size:12px;color:var(--muted);margin-bottom:12px}
+.contextnote{position:relative}
+.tipwrap{display:inline-flex;align-items:center;margin-left:7px;vertical-align:middle}
+.tiptrigger{display:inline-flex;align-items:center;gap:4px;height:23px;padding:0 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel-2);color:var(--ink-soft);font:inherit;font-size:11px;font-weight:750;line-height:1;cursor:help}
+.tiptrigger:hover,.tiptrigger:focus-visible{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.tiptrigger svg{width:12px;height:12px;flex:none}
+.tip{position:absolute;left:0;top:calc(100% + 6px);z-index:30;width:min(440px,100%);padding:11px 13px;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);font-size:12px;font-weight:400;line-height:1.55;color:var(--ink-soft);text-align:left;opacity:0;visibility:hidden;transform:translateY(-4px);transition:transform .15s;pointer-events:none}
+.tip b{color:var(--ink)}
+.tipwrap:hover .tip,.tipwrap:focus-within .tip{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
+.chart{height:300px;position:relative}
+.wide{grid-column:1/-1}
+.detailcard h2{margin:0;font-size:16px}
+.acc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.acc-heading{display:flex;flex-direction:column;gap:3px;min-width:0}
+.acc-title{font-weight:800}
+.acc-sub{font-size:12px;font-weight:500;color:var(--muted)}
+.acc-chev{width:18px;height:18px;color:var(--muted);flex:none;transition:transform .2s}
+.acc-btn[aria-expanded="true"] .acc-chev{transform:rotate(180deg)}
+.acc-btn:hover .acc-title{color:var(--accent)}
+.acc-body{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.acc-body[hidden]{display:none}
+
+.mapcard{padding:0;overflow:hidden}
+.maphead{padding:17px 18px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.mapactions{display:flex;gap:7px;flex-wrap:wrap}
+.mapbtn{border:1px solid var(--line);background:var(--panel-2);color:var(--ink-soft);border-radius:6px;padding:8px 10px;font-size:12px;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.mapbtn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent)}
+.mapwrap{height:560px;background:var(--panel-2)}
+.mapbasebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 18px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.mapbaselbl{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.mapbases{display:flex;gap:5px;flex-wrap:wrap}
+.basebtn{padding:5px 10px;font-size:11.5px;border-radius:4px}
+.mapbox{position:relative}
+.maptoast{position:absolute;left:50%;bottom:30px;transform:translateX(-50%) translateY(8px);background:rgba(20,20,20,.94);color:#fff;padding:8px 13px;border-radius:6px;font-size:12px;font-weight:600;line-height:1.35;max-width:calc(100% - 28px);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:800;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.maptoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:11px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);align-items:center}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;flex:none}
+
+.tablewrap{overflow:auto;max-height:420px;border-radius:6px;border:1px solid var(--line)}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.table td.n,.table th.n{text-align:right;font-variant-numeric:tabular-nums}
+.table th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;z-index:1}
+.table tbody tr:hover{background:var(--panel-2)}
+.empty{text-align:center;color:var(--muted);padding:25px;white-space:normal}
+
+/* ---------- Pie de página ---------- */
+.footgrid{display:grid;grid-template-columns:1.25fr 1fr 1.1fr;gap:28px}
+.footgrid h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin:0 0 10px}
+.footgrid p{margin:0 0 10px;font-size:13px;color:var(--ink-soft);line-height:1.6}
+.grupo{font-size:15px;font-weight:800;color:var(--ink);line-height:1.4;margin-bottom:10px}
+.people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.people li{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:650;color:var(--ink)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-size:11px;font-weight:850;flex:none}
+.links{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.links a{font-size:13px;word-break:break-word;display:inline-flex;gap:7px;align-items:flex-start;line-height:1.5}
+.links a::before{content:"↗";color:var(--muted);flex:none}
+.footbar{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+
+.leaflet-popup-content{font-size:13px;margin:11px 13px}
+.popup-title{font-weight:800;margin-bottom:3px;color:#1b1b1b}
+.popup-small{color:#666666;font-size:11px}
+.popup-tag{display:inline-block;margin-top:7px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:4px;background:#efefef;color:#4a4a4a}
+.leaflet-popup-content-wrapper{border-radius:8px}
+:root[data-theme="dark"] .leaflet-popup-content-wrapper,
+:root[data-theme="dark"] .leaflet-popup-tip{background:#222222;color:var(--ink)}
+:root[data-theme="dark"] .popup-title{color:var(--ink)}
+:root[data-theme="dark"] .popup-small{color:var(--muted)}
+:root[data-theme="dark"] .popup-tag{background:#2e2e2e;color:var(--ink-soft)}
+:root[data-theme="dark"] .leaflet-control-zoom a{background:#222222;color:var(--ink);border-color:#333333}
+:root[data-theme="dark"] .leaflet-control-attribution{background:rgba(18,18,18,.85);color:var(--muted)}
+:root[data-theme="dark"] .leaflet-control-attribution a{color:var(--accent)}
+:root[data-theme="dark"] .leaflet-bar{border-color:#333333}
+:root[data-theme="dark"] .leaflet-tooltip{background:#222222;color:var(--ink);border-color:#333333}
+:root[data-theme="dark"] .leaflet-tooltip-top:before{border-top-color:#222222}
+
+.k4{grid-template-columns:repeat(4,1fr)}
+.sechead{margin:18px 2px 8px;font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
+.sechead small{font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:6px}
+.kpi.warn{border-color:var(--warn)}
+.heat{border-collapse:separate;border-spacing:0;font-size:12px}
+.heat th,.heat td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.heat th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-size:10px;text-transform:uppercase;z-index:2}
+.heat td:first-child,.heat th:first-child{position:sticky;left:0;background:var(--panel);text-align:left;z-index:1;font-weight:700;min-width:170px}
+.heat th:first-child{z-index:3}
+.heat td.c{min-width:44px}.heat td.e{color:var(--muted);opacity:.5}
+.heat td.s{color:var(--ink-soft);background:var(--panel-2)}
+.method{margin-top:22px;padding:22px}
+.method .footgrid{margin-top:16px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+.method .mgrid{margin-top:20px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;margin-top:12px}
+.mgrid h3{font-size:13px;margin:0 0 6px;color:var(--accent)}
+.mgrid p,.mgrid li{font-size:12.5px;line-height:1.6;color:var(--ink-soft);margin:0 0 6px}
+.mgrid ul{margin:0;padding-left:18px}
+.todo{background:var(--accent-soft);color:var(--accent-ink);padding:1px 6px;border-radius:4px;font-weight:700}
+.clu span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:#fff;font-weight:800;font-size:12px;border:3px solid rgba(255,255,255,.7);box-shadow:0 1px 6px rgba(0,0,0,.35)}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.k4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1050px){
+  .filters{grid-template-columns:1fr 1fr}
+  .grid{grid-template-columns:1fr}
+  .wide{grid-column:auto}
+  .footgrid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:650px){
+  .mgrid{grid-template-columns:1fr}
+  .wrap{padding:15px}
+  .top{align-items:flex-start;flex-direction:column}
+  .kpis{grid-template-columns:1fr 1fr}
+  .filters{grid-template-columns:1fr}
+  .chart{height:280px}
+  .mapwrap{height:430px}
+  .kpi .num{font-size:22px}
+  h1{font-size:24px}
+  .footgrid{grid-template-columns:1fr;gap:22px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
+<main class="wrap">
+
+<header class="top">
+  <div>
+    <div class="eyebrow">Sistema de información sanitaria</div>
+    <h1>Salud materna · Ciudad de Corrientes</h1>
+    <div class="sub">Consultas médicas de embarazadas por período y rango etario, y distribución geográfica de SAPS, CAPS, hospitales y centros privados dentro del ejido de la capital.</div>
+  </div>
+  <div class="topright">
+    <div class="status" id="status" role="status">Cargando datos…</div>
+    <button class="themebtn" id="themeBtn" type="button">
+      <span id="themeIcon" aria-hidden="true"></span><span id="themeLabel">Automático</span>
+    </button>
+  </div>
+</header>
+
+<section class="panel filters" id="contenido" aria-label="Filtros">
+  <div class="field"><label for="fSaps">Establecimiento (SAPS)</label>
+    <select id="fSaps"><option value="">Todos los SAPS</option></select></div>
+  <div class="field"><label for="fAge">Rango etario</label>
+    <select id="fAge"><option value="">Todos los rangos</option></select></div>
+  <div class="field"><label for="fDate">Mes / año</label>
+    <select id="fDate"><option value="">Todo el período</option></select></div>
+  <button class="btn" id="reset" type="button">Restablecer</button>
+  <button class="btn ghost" id="csv" type="button">Exportar CSV</button>
+</section>
+
+<section class="kpis" aria-label="Indicadores">
+  <div class="panel kpi"><div class="lbl">Consultas</div><div class="num" id="kTotal">0</div><div class="hint">total filtrado</div></div>
+  <div class="panel kpi"><div class="lbl">SAPS</div><div class="num" id="kSaps">0</div><div class="hint">con consultas registradas</div></div>
+  <div class="panel kpi"><div class="lbl">Edad principal</div><div class="num sm" id="kAge">—</div><div class="hint" id="kAgeHint">por cantidad de consultas</div></div>
+  <div class="panel kpi"><div class="lbl">Promedio mensual</div><div class="num" id="kAvg">0</div><div class="hint">consultas por mes</div></div>
+  <div class="panel kpi"><div class="lbl">Período</div><div class="num sm" id="kPeriod">—</div><div class="hint">según los datos cargados</div></div>
+  <div class="panel kpi"><div class="lbl">Establecimientos</div><div class="num" id="kPlaces">0</div><div class="hint" id="kPlacesHint">georreferenciados</div></div>
+</section>
+
+<div class="sechead">Lectura del período <small>respetan los filtros de SAPS y edad</small></div>
+<section class="kpis k4" aria-label="Indicadores derivados">
+  <div class="panel kpi warn"><div class="lbl">Caída mar–jun (ASPO)</div><div class="num" id="dAspo">—</div><div class="hint" id="dAspoH"></div></div>
+  <div class="panel kpi"><div class="lbl">Recuperación jul–sep</div><div class="num" id="dRec">—</div><div class="hint" id="dRecH"></div></div>
+  <div class="panel kpi"><div class="lbl">SAPS que informan</div><div class="num" id="dRep">—</div><div class="hint" id="dRepH"></div></div>
+  <div class="panel kpi"><div class="lbl">Adolescentes (12–20)</div><div class="num" id="dTeen">—</div><div class="hint" id="dTeenH"></div></div>
+</section>
+
+<section class="grid">
+  <article class="panel card">
+    <h2>Evolución de consultas</h2>
+    <div class="note contextnote">Cantidad mensual de consultas dentro de los filtros seleccionados.
+      <span class="tipwrap">
+        <button class="tiptrigger" type="button" aria-describedby="aspoTip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          Contexto
+        </button>
+        <span class="tip" role="tooltip" id="aspoTip">La banda gris marca el <b>ASPO</b> (aislamiento obligatorio, desde el 20/03/2020). El descenso de marzo coincide con la pandemia, pero también con una caída de los SAPS que cargaron datos (<b>línea punteada</b>): con estos datos no se puede separar un efecto del otro.</span>
+      </span>
+    </div>
+    <div class="chart"><canvas id="cMonthly" role="img" aria-label="Gráfico de evolución mensual de consultas y de SAPS que informaron"></canvas></div>
+  </article>
+
+  <article class="panel card">
+    <h2>Distribución por edad</h2>
+    <div class="note">Consultas y porcentaje sobre el total, por rango etario.</div>
+    <div class="chart"><canvas id="cAges" role="img" aria-label="Gráfico de distribución por rango etario"></canvas></div>
+  </article>
+
+  <article class="panel card">
+    <h2>Evolución por rango etario</h2>
+    <div class="note">Composición mensual: permite ver qué edades concentran la atención en cada mes.</div>
+    <div class="chart"><canvas id="cStack" role="img" aria-label="Gráfico de consultas mensuales por rango etario"></canvas></div>
+  </article>
+
+  <article class="panel card">
+    <h2>SAPS con mayor cantidad de consultas</h2>
+    <div class="note">Los diez establecimientos con más consultas registradas.</div>
+    <div class="chart"><canvas id="cTop" role="img" aria-label="Gráfico de SAPS con más consultas"></canvas></div>
+  </article>
+
+  <article class="panel card wide">
+    <h2>Consultas por SAPS y mes</h2>
+    <div class="note">Cada fila es un establecimiento; el color indica la cantidad. «·» = sin registro ese mes (no equivale a cero atenciones: el SAPS puede no haber informado). «Meses» = meses con datos; media y desvío se calculan sobre esos meses.</div>
+    <div class="tablewrap" style="max-height:540px"><table class="heat" id="heat"></table></div>
+  </article>
+
+  <article class="panel wide mapcard">
+    <div class="maphead">
+      <div>
+        <h2>Mapa de establecimientos · Capital</h2>
+        <div class="note" style="margin:3px 0 0">Vista acotada al ejido urbano. Los CAPS, hospitales y centros privados se agrupan al alejar el zoom. El tamaño de los puntos de SAPS refleja las consultas del filtro activo.</div>
+      </div>
+      <div class="mapactions" role="group" aria-label="Capas del mapa">
+        <button class="mapbtn" type="button" data-layer="saps" aria-pressed="true"><i class="dot" style="background:#1e7a4d"></i>SAPS</button>
+        <button class="mapbtn" type="button" data-layer="caps" aria-pressed="true"><i class="dot" style="background:#2563eb"></i>CAPS</button>
+        <button class="mapbtn" type="button" data-layer="hospitales" aria-pressed="true"><i class="dot" style="background:#dc2626"></i>Hospitales</button>
+        <button class="mapbtn" type="button" data-layer="centros" aria-pressed="true"><i class="dot" style="background:#d97706"></i>Centros privados</button>
+        <button class="mapbtn" type="button" data-layer="zonas" aria-pressed="true"><i class="dot" style="background:var(--slate)"></i>Áreas</button>
+        <button class="mapbtn" type="button" id="recenter">Centrar</button>
+      </div>
+    </div>
+    <div class="mapbasebar">
+      <span class="mapbaselbl" id="baseLbl">Mapa base</span>
+      <div class="mapbases" role="group" aria-labelledby="baseLbl">
+        <button class="mapbtn basebtn" type="button" data-base="calles" aria-pressed="true">Calles</button>
+        <button class="mapbtn basebtn" type="button" data-base="osm" aria-pressed="false">OSM</button>
+        <button class="mapbtn basebtn" type="button" data-base="relieve" aria-pressed="false">Relieve</button>
+        <button class="mapbtn basebtn" type="button" data-base="satelite" aria-pressed="false">Satélite</button>
+      </div>
+    </div>
+    <div class="mapbox">
+      <div id="map" class="mapwrap" role="application" aria-label="Mapa de establecimientos de salud de la ciudad de Corrientes"></div>
+      <div class="maptoast" id="mapToast" role="status" aria-live="polite"></div>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:#1e7a4d"></i>SAPS</span>
+      <span><i class="dot" style="background:#2563eb"></i>CAPS</span>
+      <span><i class="dot" style="background:#dc2626"></i>Hospitales públicos</span>
+      <span><i class="dot" style="background:#d97706"></i>Centros privados</span>
+      <span><i class="dot" style="background:var(--slate)"></i>Áreas programáticas</span>
+      <span id="mapNote" style="margin-left:auto;text-align:right"></span>
+    </div>
+  </article>
+
+  <article class="panel card wide detailcard">
+    <h2>
+      <button class="acc-btn" id="detailToggle" type="button" aria-expanded="false" aria-controls="detailBody">
+        <span class="acc-heading">
+          <span class="acc-title">Detalle de consultas</span>
+          <span class="acc-sub">Información específica por SAPS, mes y rango etario</span>
+        </span>
+        <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </h2>
+    <div class="acc-body" id="detailBody" hidden>
+      <div class="note" id="tableNote">Detalle mensual por establecimiento y rango etario.</div>
+      <div class="tablewrap">
+        <table class="table">
+          <thead><tr><th>SAPS</th><th>Fecha</th><th>Rango etario</th><th class="n">Consultas</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section class="panel method" id="metodologia" aria-label="Metodología y proyecto">
+  <h2 style="margin:0;font-size:18px">Metodología y proyecto</h2>
+  <p class="note" style="margin:6px 0 0">Limpieza de anomalías: se quitaron 6 filas duplicadas exactas y 1 fila vacía sin rango etario. Los recuadros de cobertura del dato se removieron porque repetían totales ya visibles o mostraban valores en cero.</p>
+  <div class="footgrid">
+    <div>
+      <h3>Sobre el proyecto</h3>
+      <div class="grupo">Atención médica de embarazadas y cobertura de centros de salud</div>
+      <p>Trabajo de análisis sobre datos abiertos publicados por la Municipalidad de la Ciudad de Corrientes.</p>
+      <h3 style="margin-top:18px">Integrantes</h3>
+      <ul class="people">
+        <li><span class="avatar" aria-hidden="true">DD</span>Daniel Dure</li>
+        <li><span class="avatar" aria-hidden="true">MG</span>Maidana Guido</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Objetivos</h3>
+      <p>Analizar las consultas médicas de embarazadas por período y rango etario, y relacionarlas con la localización de SAPS, CAPS, hospitales y centros privados.</p>
+      <p>Permite observar qué edades concentran más consultas, cómo evoluciona la atención a lo largo del tiempo y dónde se ubican los centros disponibles.</p>
+    </div>
+    <div>
+      <h3>Fuentes y fecha</h3>
+      <ul class="links">
+        <li><a href="https://datos.ciudaddecorrientes.gov.ar/dataset/atencion_embarazadas" target="_blank" rel="noopener noreferrer">Atención de embarazadas — Datos Abiertos, Ciudad de Corrientes</a></li>
+        <li><a href="https://datos.ciudaddecorrientes.gov.ar/dataset/centros-de-salud" target="_blank" rel="noopener noreferrer">Centros de salud — Datos Abiertos, Ciudad de Corrientes</a></li>
+      </ul>
+      <p style="margin:12px 0 6px;font-size:12px">Datos descargados del Portal de Datos Abiertos de la Ciudad de Corrientes el <b>29/08/2026</b>.</p>
+      <p style="margin:0;font-size:12px">Cartografía base: Esri (calles y satélite), OpenStreetMap y OpenTopoMap, sin claves de API. Los puntos representan únicamente las coordenadas presentes en los archivos publicados.</p>
+    </div>
+  </div>
+  <div class="mgrid">
+    <div><h3>1 · Qué se transformó</h3><ul>
+      <li>Limpieza de las 7 planillas de origen: 214 filas → 207 (se quitaron 6 filas duplicadas exactas y 1 fila vacía sin rango etario); 1.455 → 1.420 consultas. Una fila es un agregado mensual, no una consulta individual.</li>
+      <li>Nombres unificados en la base: «DR. BLUGERMAN» y «DR. PEDRO BLUGERMAN» pasan a ser un mismo SAPS. 31 nombres en la fuente → 30 SAPS (nombre canónico con numeral romano y barrio).</li>
+      <li>Numeral corregido: la fuente repetía «XXXIII» en Sussini; por secuencia corresponde a SAP XXXII.</li>
+      <li>Texto normalizado: tildes y mayúsculas, rangos etarios («16-20 años»), meses, direcciones y abreviaturas.</li>
+      <li>Cada establecimiento tiene su área programática (I/II/III), asignada por punto-en-polígono sobre los polígonos oficiales.</li>
+      <li>El cruce entre consultas y establecimientos ahora es directo: los nombres canónicos coinciden exactamente (ya no se usan alias ni similitud de palabras).</li></ul></div>
+    <div><h3>2 · Cómo se calcula cada número</h3><ul>
+      <li>Promedio mensual = consultas ÷ meses con registros en la selección (1.420 ÷ 9 = 158).</li>
+      <li>Porcentaje etario = consultas del rango ÷ total filtrado (21–39: 1.077 ÷ 1.420 ≈ 76%).</li>
+      <li>Ranking: los 10 SAPS con más consultas de la selección.</li>
+      <li>Caída = promedio mensual mar–jun ÷ promedio ene–feb − 1. Recuperación = promedio jul–sep ÷ promedio ene–feb.</li>
+      <li>SAPS que informan = SAPS con al menos una consulta en el mes. Adolescentes = (12–15 + 16–20) ÷ total.</li></ul></div>
+    <div><h3>3 · Supuestos</h3>
+      <p>Cada fila es un agregado mensual por SAPS y rango etario, no una consulta individual. Las filas repetidas idénticas se consideran errores de carga (se conserva una) y la fila sin rango etario se descartó. Se asume que la ausencia de fila en un mes significa que el SAPS no informó, no que no atendió. El ASPO rige desde el 20/03/2020 (DNU 297/2020); la banda del gráfico se extiende hasta el final de la serie.</p></div>
+    <div><h3>4 · Límites</h3><ul>
+      <li>Solo enero–septiembre de 2020.</li>
+      <li>La caída de marzo mezcla ASPO y menor cantidad de SAPS que informan; no se pueden separar.</li>
+      <li>No se verificó si el archivo cubre todas las consultas de la capital: 158 por mes es poco y el portal no lo aclara. Que informen menos SAPS con los meses sugiere carga parcial.</li>
+      <li>Los 30 SAPS con consultas tienen coordenadas y se muestran en el mapa.</li>
+      <li>Las fuentes no traen población ni barrios, por lo que no se calcularon consultas por 1.000 mujeres en edad fértil ni población a menos de 1 km de un SAPS.</li></ul></div>
+  </div>
+  <div class="footbar">
+    <span>Dashboard de Salud Materna · Ciudad de Corrientes</span>
+  </div>
+</section>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+<script src="./data.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ========================= Utilidades ========================= */
+var D = window.DASHBOARD_DATA || {};
+var $ = function (id) { return document.getElementById(id); };
+var nf = new Intl.NumberFormat('es-AR');
+var fmt = function (n) { return nf.format(Math.round(Number(n) || 0)); };
+var esc = function (v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+};
+/* Nombre corto para etiquetas compactas: quita el numeral («SAP III - »)
+   y el barrio que va entre paréntesis al final. */
+function shortName(s) {
+  var t = String(s == null ? '' : s).trim()
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .replace(/^\s*SAPS?\s+(?:[IVXLC]+\s*[-–]\s*)?/i, '');
+  return t || String(s == null ? '' : s);
+}
+var MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+var mesCorto = function (ym) {
+  var p = String(ym).split('-');
+  var i = Number(p[1]) - 1;
+  return (MESES[i] || p[1]) + ' ' + p[0];
+};
+
+/* Los datos ya vienen normalizados y unificados desde la base limpia. */
+var CONSULTAS = (D.consultas || []).filter(function (r) { return r && r.fecha_iso; });
+var sum = function (a) { return a.reduce(function (t, x) { return t + Number(x.consulta_cantidad || 0); }, 0); };
+var SIN_RANGO = 'Sin dato';
+
+/* ========================= Tema ========================= */
+var root = document.documentElement;
+var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+var ICONS = {
+  auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/></svg>',
+  light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>',
+  dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>'
+};
+var LABELS = { auto: 'Automático', light: 'Claro', dark: 'Oscuro' };
+var mode = root.getAttribute('data-mode') || 'auto';
+
+function resolvedTheme() {
+  if (mode === 'auto') return (mq && mq.matches) ? 'dark' : 'light';
+  return mode;
+}
+function applyTheme(rerender) {
+  root.setAttribute('data-theme', resolvedTheme());
+  root.setAttribute('data-mode', mode);
+  $('themeIcon').innerHTML = ICONS[mode];
+  $('themeLabel').textContent = LABELS[mode];
+  $('themeBtn').setAttribute('title', 'Tema: ' + LABELS[mode] + ' — clic para cambiar');
+  $('themeBtn').setAttribute('aria-label', 'Cambiar tema. Actual: ' + LABELS[mode]);
+  if (rerender) { renderCharts(); styleMap(); }
+}
+$('themeBtn').addEventListener('click', function () {
+  mode = mode === 'auto' ? 'light' : (mode === 'light' ? 'dark' : 'auto');
+  try { localStorage.setItem('dc-theme', mode); } catch (e) {}
+  applyTheme(true);
+});
+if (mq) {
+  var onScheme = function () { if (mode === 'auto') applyTheme(true); };
+  if (mq.addEventListener) mq.addEventListener('change', onScheme);
+  else if (mq.addListener) mq.addListener(onScheme);
+}
+function css(name) {
+  return getComputedStyle(root).getPropertyValue(name).trim();
+}
+
+/* ========================= Filtros ========================= */
+function unique(arr) {
+  return Array.from(new Set(arr)).filter(Boolean)
+    .sort(function (a, b) { return String(a).localeCompare(String(b), 'es'); });
+}
+function fill(id, vals, labeler) {
+  var sel = $(id), frag = document.createDocumentFragment();
+  vals.forEach(function (v) {
+    var o = document.createElement('option');
+    o.value = v;
+    o.textContent = labeler ? labeler(v) : v;
+    frag.appendChild(o);
+  });
+  sel.appendChild(frag);
+}
+fill('fSaps', unique(CONSULTAS.map(function (x) { return x.saps; })), shortName);
+fill('fAge', unique(CONSULTAS.map(function (x) { return x.rango_etario || SIN_RANGO; })));
+fill('fDate', unique(CONSULTAS.map(function (x) { return x.fecha_iso.slice(0, 7); })).sort().reverse(), mesCorto);
+
+function filtered(skipDate) {
+  var s = $('fSaps').value, a = $('fAge').value, d = $('fDate').value;
+  return CONSULTAS.filter(function (x) {
+    var rango = x.rango_etario || SIN_RANGO;
+    return (!s || x.saps === s) && (!a || rango === a) && (skipDate || !d || x.fecha_iso.indexOf(d) === 0);
+  });
+}
+
+/* ========================= Gráficos ========================= */
+var charts = {};
+var rows = [];
+
+function palette() {
+  return [css('--chart-1'), css('--chart-2'), css('--chart-3'), css('--chart-4'), css('--chart-5'), css('--chart-6')];
+}
+function chartBase() {
+  Chart.defaults.color = css('--ink-soft');
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.borderColor = css('--grid');
+  var grid = css('--grid'), muted = css('--muted');
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 350 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, padding: 14 } },
+      tooltip: {
+        backgroundColor: css('--panel'), titleColor: css('--ink'), bodyColor: css('--ink-soft'),
+        borderColor: css('--line'), borderWidth: 1, padding: 10
+      }
+    },
+    scales: {
+      x: { grid: { color: grid }, border: { display: false }, ticks: { color: muted } },
+      y: { beginAtZero: true, grid: { color: grid }, border: { display: false }, ticks: { color: muted } }
+    }
+  };
+}
+function kill(k) { if (charts[k]) { charts[k].destroy(); delete charts[k]; } }
+
+function renderCharts() {
+  if (typeof Chart === 'undefined') return;
+  var pal = palette(), base = chartBase();
+
+  /* --- Evolución mensual --- */
+  var months = {};
+  rows.forEach(function (x) {
+    var k = x.fecha_iso.slice(0, 7);
+    months[k] = (months[k] || 0) + Number(x.consulta_cantidad || 0);
+  });
+  var ml = Object.keys(months).sort();
+  var rep = {};
+  rows.forEach(function (x) {
+    if (Number(x.consulta_cantidad) > 0) { var m = x.fecha_iso.slice(0, 7); (rep[m] = rep[m] || {})[x.saps] = 1; }
+  });
+  var aspoIdx = ml.indexOf('2020-03');
+  var aspoBand = { id: 'aspo', beforeDatasetsDraw: function (ch) {
+    if (aspoIdx < 0) return;
+    var x = ch.scales.x, a = ch.chartArea, ctx = ch.ctx;
+    var step = ml.length > 1 ? x.getPixelForValue(1) - x.getPixelForValue(0) : a.right - a.left;
+    var x0 = Math.max(a.left, x.getPixelForValue(aspoIdx) - step / 2);
+    ctx.save(); ctx.fillStyle = css('--slate') + '26'; ctx.fillRect(x0, a.top, a.right - x0, a.bottom - a.top);
+    ctx.fillStyle = css('--ink-soft'); ctx.font = '700 11px ' + Chart.defaults.font.family;
+    ctx.textBaseline = 'top'; ctx.fillText('ASPO desde 20/03', x0 + 6, a.top + 5); ctx.restore();
+  } };
+  kill('monthly');
+  charts.monthly = new Chart($('cMonthly'), {
+    type: 'line',
+    plugins: [aspoBand],
+    data: {
+      labels: ml.map(mesCorto),
+      datasets: [{
+        label: 'Consultas (eje izq.)',
+        data: ml.map(function (k) { return months[k]; }),
+        tension: .3, fill: true, borderColor: pal[0], backgroundColor: pal[0] + '22',
+        pointBackgroundColor: pal[0], pointRadius: 3, pointHoverRadius: 5, borderWidth: 2
+      }, {
+        label: 'SAPS que informaron (eje der.)', yAxisID: 'y2',
+        data: ml.map(function (k) { return rep[k] ? Object.keys(rep[k]).length : 0; }),
+        tension: .3, fill: false, borderColor: pal[1], pointBackgroundColor: pal[1],
+        borderDash: [5, 4], pointRadius: 2, borderWidth: 2
+      }]
+    },
+    options: Object.assign({}, base, {
+      scales: Object.assign({}, base.scales, {
+        y2: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, border: { display: false },
+              ticks: { color: pal[1], precision: 0 } }
+      })
+    })
+  });
+
+  /* --- Distribución por edad ---
+     Ojo: la variable de conteo NO puede llamarse igual que el id del canvas,
+     ese era el bug que rompía este gráfico y todo lo que venía después. */
+  var byAge = {};
+  rows.forEach(function (x) {
+    var k = x.rango_etario || SIN_RANGO;
+    byAge[k] = (byAge[k] || 0) + Number(x.consulta_cantidad || 0);
+  });
+  var ageKeys = Object.keys(byAge).sort();
+  kill('ages');
+  var totAge = ageKeys.reduce(function (t, k) { return t + byAge[k]; }, 0);
+  charts.ages = new Chart($('cAges'), {
+    type: 'bar',
+    data: {
+      labels: ageKeys.map(function (k) { return k + ' · ' + (totAge ? (byAge[k] / totAge * 100).toFixed(1) : '0') + '%'; }),
+      datasets: [{ label: 'Consultas', data: ageKeys.map(function (k) { return byAge[k]; }),
+        backgroundColor: ageKeys.map(function (k, i) { return pal[i % pal.length]; }), borderRadius: 4 }]
+    },
+    options: Object.assign({}, base, {
+      indexAxis: 'y', interaction: { mode: 'nearest', intersect: true },
+      plugins: Object.assign({}, base.plugins, { legend: { display: false } }),
+      scales: {
+        x: { beginAtZero: true, grid: { color: css('--grid') }, border: { display: false }, ticks: { color: css('--muted') } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { color: css('--ink-soft') } }
+      }
+    })
+  });
+
+  /* --- Evolución por rango etario (barras apiladas) --- */
+  var cube = {};
+  rows.forEach(function (x) {
+    var m = x.fecha_iso.slice(0, 7), a = x.rango_etario || SIN_RANGO;
+    cube[m + '|' + a] = (cube[m + '|' + a] || 0) + Number(x.consulta_cantidad || 0);
+  });
+  var stackSets = ageKeys.map(function (age, i) {
+    return {
+      label: age,
+      data: ml.map(function (m) { return cube[m + '|' + age] || 0; }),
+      backgroundColor: pal[i % pal.length], borderRadius: 3, borderSkipped: false
+    };
+  });
+  kill('stack');
+  charts.stack = new Chart($('cStack'), {
+    type: 'bar',
+    data: { labels: ml.map(mesCorto), datasets: stackSets },
+    options: Object.assign({}, base, {
+      scales: {
+        x: Object.assign({}, base.scales.x, { stacked: true }),
+        y: Object.assign({}, base.scales.y, { stacked: true })
+      }
+    })
+  });
+
+  /* --- Top SAPS --- */
+  var bySaps = {};
+  rows.forEach(function (x) {
+    bySaps[x.saps] = (bySaps[x.saps] || 0) + Number(x.consulta_cantidad || 0);
+  });
+  var top = Object.keys(bySaps).map(function (k) { return [k, bySaps[k]]; })
+    .sort(function (a, b) { return b[1] - a[1]; }).slice(0, 10);
+  kill('top');
+  charts.top = new Chart($('cTop'), {
+    type: 'bar',
+    data: {
+      labels: top.map(function (x) { return shortName(x[0]); }),
+      datasets: [{
+        label: 'Consultas', data: top.map(function (x) { return x[1]; }),
+        backgroundColor: pal[0], borderRadius: 4
+      }]
+    },
+    options: Object.assign({}, base, {
+      indexAxis: 'y',
+      interaction: { mode: 'nearest', intersect: true },
+      plugins: Object.assign({}, base.plugins, { legend: { display: false } }),
+      scales: {
+        x: { beginAtZero: true, grid: { color: css('--grid') }, border: { display: false }, ticks: { color: css('--muted') } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { color: css('--muted'), font: { size: 10 } } }
+      }
+    })
+  });
+}
+
+/* ========================= KPIs y tabla ========================= */
+function renderKpis() {
+  var total = rows.reduce(function (a, x) { return a + Number(x.consulta_cantidad || 0); }, 0);
+  $('kTotal').textContent = fmt(total);
+  $('kSaps').textContent = fmt(new Set(rows.map(function (x) { return x.saps; })).size);
+
+  var byAge = {};
+  rows.forEach(function (x) {
+    var k = x.rango_etario || SIN_RANGO;
+    byAge[k] = (byAge[k] || 0) + Number(x.consulta_cantidad || 0);
+  });
+  var topAge = Object.keys(byAge).map(function (k) { return [k, byAge[k]]; })
+    .sort(function (a, b) { return b[1] - a[1]; })[0];
+  $('kAge').textContent = topAge ? topAge[0] : '—';
+  $('kAgeHint').textContent = (topAge && total)
+    ? fmt(topAge[1]) + ' consultas · ' + (topAge[1] / total * 100).toFixed(0) + '% del total'
+    : 'por cantidad de consultas';
+
+  var meses = new Set(rows.map(function (x) { return x.fecha_iso.slice(0, 7); }));
+  $('kAvg').textContent = meses.size ? fmt(total / meses.size) : '0';
+
+  var ds = rows.map(function (x) { return x.fecha_iso; }).sort();
+  $('kPeriod').textContent = ds.length
+    ? mesCorto(ds[0].slice(0, 7)) + ' — ' + mesCorto(ds[ds.length - 1].slice(0, 7))
+    : '—';
+}
+
+function renderDerived() {
+  var r0 = filtered(true), mm = {};
+  r0.forEach(function (x) { var m = x.fecha_iso.slice(5, 7); mm[m] = (mm[m] || 0) + Number(x.consulta_cantidad || 0); });
+  function mean(l) {
+    var v = l.filter(function (m) { return mm[m] != null; }).map(function (m) { return mm[m]; });
+    return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null;
+  }
+  var base = mean(['01', '02']), asp = mean(['03', '04', '05', '06']), rec = mean(['07', '08', '09']);
+  var ok = base && base > 0;
+  $('dAspo').textContent = ok && asp != null ? (asp / base - 1 > 0 ? '+' : '−') + Math.abs(Math.round((asp / base - 1) * 100)) + '%' : '—';
+  $('dAspoH').textContent = ok && asp != null ? 'promedio mensual: ' + fmt(asp) + ' vs ' + fmt(base) + ' en ene–feb' : 'sin datos en el período';
+  $('dRec').textContent = ok && rec != null ? Math.round(rec / base * 100) + '% de la base' : '—';
+  $('dRecH').textContent = ok && rec != null ? 'jul–sep: ' + fmt(rec) + ' por mes vs ' + fmt(base) : 'sin datos en el período';
+  var ms = unique(CONSULTAS.map(function (x) { return x.fecha_iso.slice(0, 7); })).sort();
+  function nRep(m) {
+    return new Set(CONSULTAS.filter(function (x) { return x.fecha_iso.indexOf(m) === 0 && Number(x.consulta_cantidad) > 0; })
+      .map(function (x) { return x.saps; })).size;
+  }
+  $('dRep').textContent = ms.length ? nRep(ms[0]) + ' → ' + nRep(ms[ms.length - 1]) : '—';
+  $('dRepH').textContent = ms.length ? mesCorto(ms[0]) + ' vs ' + mesCorto(ms[ms.length - 1]) + ' (SAPS con consultas)' : '';
+  var tot = sum(rows), teen = sum(rows.filter(function (x) { return Number(x.edad_min) <= 20; }));
+  $('dTeen').textContent = tot ? (teen / tot * 100).toFixed(0) + '%' : '—';
+  $('dTeenH').textContent = tot ? fmt(teen) + ' de ' + fmt(tot) + ' consultas' : 'sin consultas';
+}
+function renderHeat() {
+  var ms = unique(CONSULTAS.map(function (x) { return x.fecha_iso.slice(0, 7); })).sort(), data = {}, mx = 0;
+  rows.forEach(function (x) {
+    var m = x.fecha_iso.slice(0, 7), o = data[x.saps] = data[x.saps] || {};
+    o[m] = (o[m] || 0) + Number(x.consulta_cantidad || 0);
+  });
+  var list = Object.keys(data).map(function (n) {
+    var v = ms.filter(function (m) { return data[n][m] != null; }).map(function (m) { return data[n][m]; });
+    var t = v.reduce(function (a, b) { return a + b; }, 0), mean = v.length ? t / v.length : 0;
+    var sd = v.length ? Math.sqrt(v.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / v.length) : 0;
+    v.forEach(function (c) { if (c > mx) mx = c; });
+    return { n: n, t: t, k: v.length, mean: mean, sd: sd };
+  }).sort(function (a, b) { return b.t - a.t; });
+  var h = '<thead><tr><th>SAPS</th>' + ms.map(function (m) { return '<th>' + esc(mesCorto(m).replace(' 2020', '')) + '</th>'; }).join('') +
+    '<th>Total</th><th>Meses</th><th>Media</th><th>Desvío</th></tr></thead><tbody>';
+  list.forEach(function (r) {
+    h += '<tr><td title="' + esc(r.n) + '">' + esc(shortName(r.n)) + '</td>' + ms.map(function (m) {
+      var v = data[r.n][m];
+      if (v == null) return '<td class="c e">·</td>';
+      var q = mx ? v / mx : 0;
+      return '<td class="c" style="background:color-mix(in srgb,var(--accent) ' + Math.round(8 + 72 * q) + '%,transparent);' +
+        (q > .6 ? 'color:var(--bg);font-weight:700' : '') + '">' + fmt(v) + '</td>';
+    }).join('') + '<td class="s"><b>' + fmt(r.t) + '</b></td><td class="s">' + r.k + '/' + ms.length +
+      '</td><td class="s">' + r.mean.toFixed(1).replace('.', ',') + '</td><td class="s">' + r.sd.toFixed(1).replace('.', ',') + '</td></tr>';
+  });
+  $('heat').innerHTML = list.length ? h + '</tbody>' : '<tbody><tr><td class="empty">Sin registros con los filtros seleccionados.</td></tr></tbody>';
+}
+
+function renderTable() {
+  var html = rows.slice().sort(function (a, b) {
+    return b.fecha_iso.localeCompare(a.fecha_iso) || String(a.saps).localeCompare(String(b.saps), 'es');
+  }).map(function (x) {
+    return '<tr><td title="' + esc(x.saps) + '">' + esc(shortName(x.saps)) + '</td><td>' + esc(mesCorto(x.periodo)) + '</td><td>' +
+      esc(x.rango_etario || SIN_RANGO) + '</td><td class="n">' + fmt(x.consulta_cantidad) + '</td></tr>';
+  }).join('');
+  $('tbody').innerHTML = html || '<tr><td colspan="4" class="empty">No hay registros con los filtros seleccionados.</td></tr>';
+  $('tableNote').textContent = rows.length
+    ? rows.length + ' registro' + (rows.length === 1 ? '' : 's') + ' en la selección actual, del más reciente al más antiguo.'
+    : 'Sin registros. Probá restablecer los filtros.';
+  $('csv').disabled = !rows.length;
+}
+
+/* ========================= Mapa ========================= */
+/* Caja del ejido urbano de la ciudad de Corrientes. Fuera de ella no hay datos,
+   así que el mapa no permite alejarse ni salir de la capital. */
+var CAP = { s: -27.5750, w: -58.9050, n: -27.4000, e: -58.6250 };
+var CAP_BOUNDS = [[CAP.s, CAP.w], [CAP.n, CAP.e]];
+function inCapital(lat, lng) {
+  return lat >= CAP.s && lat <= CAP.n && lng >= CAP.w && lng <= CAP.e;
+}
+var map, layers = {}, zoneLayer, sapsPoints = [];
+/* Mapas base sin clave de API (Esri, OSM France y OpenTopoMap). Si una capa
+   no logra cargar mosaicos, se pasa automáticamente a la siguiente. */
+var BASE_ORDER = ['calles', 'osm', 'relieve', 'satelite'];
+var BASE_NAMES = { calles: 'Calles', osm: 'OSM', relieve: 'Relieve', satelite: 'Satélite' };
+var bases = null, currentBase = 'calles', baseToastTimer;
+
+function mapToast(msg) {
+  var el = $('mapToast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(baseToastTimer);
+  baseToastTimer = setTimeout(function () { el.classList.remove('show'); }, 4200);
+}
+
+function setupBases() {
+  /* Sin "bounds" en las capas: al centrar el mapa el zoom puede mostrar un área
+     más amplia que el ejido y, si se limita la descarga, quedan franjas vacías.
+     El acotado del recorrido ya lo hace maxBounds. */
+  bases = {
+    /* Esri World Street Map: calles y nombres, sin clave */
+    calles: {
+      probe: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        minZoom: 11, maxZoom: 18, noWrap: true,
+        attribution: 'Mapa &copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, OpenStreetMap contributors'
+      })
+    },
+    /* OpenStreetMap: estilo OSM estándar, sin clave */
+    osm: {
+      probe: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        subdomains: 'abc', minZoom: 11, maxZoom: 18, noWrap: true,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      })
+    },
+    /* OpenTopoMap: relieve y curvas de nivel, sin clave */
+    relieve: {
+      probe: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        subdomains: 'abc', minZoom: 11, maxNativeZoom: 17, maxZoom: 18, noWrap: true,
+        attribution: '&copy; OpenStreetMap contributors · <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'
+      })
+    },
+    /* Imágenes satelitales de Esri + nombres de lugares, sin clave */
+    satelite: {
+      probe: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        minZoom: 11, maxZoom: 18, noWrap: true,
+        attribution: 'Imágenes &copy; Esri, Maxar, Earthstar Geographics'
+      })
+    }
+  };
+  bases.calles.layer = bases.calles.probe;
+  bases.osm.layer = bases.osm.probe;
+  bases.relieve.layer = bases.relieve.probe;
+  bases.satelite.layer = L.layerGroup([
+    bases.satelite.probe,
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      minZoom: 11, maxZoom: 18, noWrap: true
+    })
+  ]);
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-base]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.getAttribute('data-base');
+      if (!bases[key]) return;
+      bases[key].failed = false; bases[key].err = 0; /* reintento manual */
+      selectBase(key);
+    });
+  });
+
+  BASE_ORDER.forEach(function (key) {
+    var st = bases[key];
+    st.ok = 0; st.err = 0; st.failed = false;
+    st.probe.on('tileload', function () { st.ok++; });
+    st.probe.on('tileerror', function () {
+      st.err++;
+      if (key !== currentBase || st.ok > 0 || st.err < 4 || st.failed) return;
+      st.failed = true;
+      var next = BASE_ORDER.filter(function (k) { return k !== key && !bases[k].failed; })[0];
+      if (next) {
+        selectBase(next);
+        mapToast(BASE_NAMES[key] + ' no cargó; se usó ' + BASE_NAMES[next] + '.');
+      } else {
+        mapToast('No se pudo cargar ningún mapa base. Revisá la conexión.');
+      }
+    });
+  });
+}
+
+function selectBase(key) {
+  if (!map || !bases || !bases[key]) return;
+  if (key !== currentBase) {
+    map.removeLayer(bases[currentBase].layer);
+    currentBase = key;
+  }
+  if (!map.hasLayer(bases[key].layer)) bases[key].layer.addTo(map);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-base]'), function (b) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-base') === key));
+  });
+}
+
+/* Cruce directo: los nombres canónicos de consultas y establecimientos ya vienen
+   unificados desde la limpieza, así que alcanza con normalizarlos (mayúsculas,
+   sin tildes, sin espacios repetidos) para que coincidan. */
+function normKey(s) {
+  return String(s || '').toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9Ñ]+/g, ' ').trim();
+}
+var sapsIndex = Object.create(null);
+(D.saps || []).forEach(function (r) { sapsIndex[normKey(r.nombre)] = r; });
+function matchSaps(nombre) {
+  return sapsIndex[normKey(nombre)] || null;
+}
+
+function coords(r) {
+  var lat = Number(r.lat);
+  var raw = (r.lng != null ? r.lng : (r.long != null ? r.long : r.longitud));
+  var lng = Number(raw);
+  if (!isFinite(lat) || !isFinite(lng)) return null;
+  if (!inCapital(lat, lng)) return null; /* descarta cualquier punto fuera de la capital */
+  return [lat, lng];
+}
+function popupHtml(title, sub, tag, extra) {
+  return '<div class="popup-title">' + esc(title) + '</div>' +
+    (sub ? '<div class="popup-small">' + esc(sub) + '</div>' : '') +
+    (extra ? '<div style="margin-top:6px;font-size:12px">' + extra + '</div>' : '') +
+    (tag ? '<span class="popup-tag">' + esc(tag) + '</span>' : '');
+}
+function clusterGroup(color) {
+  if (!L.markerClusterGroup) return L.layerGroup();
+  return L.markerClusterGroup({
+    showCoverageOnHover: false, spiderfyOnMaxZoom: false, maxClusterRadius: 38, disableClusteringAtZoom: 15,
+    iconCreateFunction: function (c) {
+      return L.divIcon({ html: '<span style="background:' + color + '">' + c.getChildCount() + '</span>', className: 'clu', iconSize: [30, 30] });
+    }
+  });
+}
+function buildPoints(items, color, type, tag) {
+  var g = type === 'saps' ? L.layerGroup() : clusterGroup(color);
+  (items || []).forEach(function (r) {
+    var c = coords(r);
+    if (!c) return;
+    var m = L.circleMarker(c, { radius: 5, weight: 2, opacity: 1, fillOpacity: .75, color: color, fillColor: color });
+    m.bindPopup(popupHtml(r.nombre, r.direccion || r.barrio, tag + (r.zona ? ' · ' + r.zona : '')));
+    m.bindTooltip(shortName(r.nombre), { direction: 'top', offset: [0, -6] });
+    if (type === 'saps') { m._nombre = r.nombre; m._dir = r.direccion || r.barrio; m._zona = r.zona || ''; sapsPoints.push(m); }
+    g.addLayer(m);
+  });
+  layers[type] = g;
+  return g;
+}
+
+/* Tamaño y contenido de los SAPS según el filtro activo. */
+function refreshSapsMarkers() {
+  var totals = {}, sinGeo = new Set();
+  rows.forEach(function (x) {
+    var m = matchSaps(x.saps);
+    if (m) totals[m.nombre] = (totals[m.nombre] || 0) + Number(x.consulta_cantidad || 0);
+    else sinGeo.add(x.saps);
+  });
+  sapsPoints.forEach(function (m) {
+    var v = totals[m._nombre] || 0;
+    m.setRadius(5 + Math.min(11, Math.sqrt(v) * 1.5));
+    m.setStyle({ fillOpacity: v ? .8 : .3 });
+    m.setPopupContent(popupHtml(m._nombre, m._dir, 'SAPS' + (m._zona ? ' · ' + m._zona : ''),
+      v ? '<b>' + fmt(v) + '</b> consulta' + (v === 1 ? '' : 's') + ' en la selección'
+        : 'Sin consultas en la selección actual'));
+  });
+  $('mapNote').textContent = sinGeo.size
+    ? sinGeo.size + ' SAPS de la base de consultas no tienen coordenadas publicadas'
+    : 'Todos los SAPS con consultas están georreferenciados';
+}
+
+function styleMap() {
+  if (!map) return;
+  var dark = root.getAttribute('data-theme') === 'dark';
+  if (zoneLayer) {
+    zoneLayer.setStyle({
+      color: css('--slate'), weight: 1.5, fillOpacity: dark ? .1 : .07, dashArray: '5 5'
+    });
+  }
+}
+
+function initMap() {
+  if (typeof L === 'undefined') {
+    $('map').innerHTML = '<div class="empty" style="padding:40px">No se pudo cargar la librería del mapa. Revisá la conexión e intentá de nuevo.</div>';
+    return;
+  }
+  map = L.map('map', {
+    scrollWheelZoom: false,          /* no secuestra el scroll de la página */
+    maxBounds: L.latLngBounds(CAP_BOUNDS).pad(0.05),
+    maxBoundsViscosity: 1,
+    minZoom: 11, maxZoom: 18,
+    worldCopyJump: false
+  });
+  map.fitBounds(L.latLngBounds(CAP_BOUNDS), { padding: [10, 10] });
+  setupBases();
+  selectBase(currentBase);
+  map.on('click focus', function () { map.scrollWheelZoom.enable(); });
+  map.on('mouseout', function () { map.scrollWheelZoom.disable(); });
+
+  /* Áreas programáticas */
+  var feats = (D.zonas || []).filter(function (z) { return z && z.geometry; }).map(function (z) {
+    return { type: 'Feature', properties: { zona: z.zona }, geometry: z.geometry };
+  });
+  if (feats.length) {
+    zoneLayer = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+      style: { color: css('--slate'), weight: 1.5, fillOpacity: .07, dashArray: '5 5' },
+      onEachFeature: function (f, l) {
+        l.bindTooltip('Área programática ' + String(f.properties.zona || '').replace(/^Área\s*/i, ''), { sticky: true });
+      }
+    }).addTo(map);
+    layers.zonas = zoneLayer;
+  }
+
+  buildPoints(D.saps, '#1e7a4d', 'saps', 'SAPS').addTo(map);
+  buildPoints(D.caps, '#2563eb', 'caps', 'CAPS').addTo(map);
+  buildPoints(D.hospitales, '#dc2626', 'hospitales', 'Hospital público').addTo(map);
+  buildPoints(D.centros, '#d97706', 'centros', 'Centro privado').addTo(map);
+  if (zoneLayer) zoneLayer.bringToBack();
+
+  var n = ['saps', 'caps', 'hospitales', 'centros'].reduce(function (a, k) {
+    return a + (layers[k] ? layers[k].getLayers().length : 0);
+  }, 0);
+  $('kPlaces').textContent = fmt(n);
+  $('kPlacesHint').textContent = 'georreferenciados en la capital';
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-layer]'), function (btn) {
+    var key = btn.getAttribute('data-layer');
+    if (!layers[key]) { btn.disabled = true; btn.setAttribute('aria-pressed', 'false'); return; }
+    btn.addEventListener('click', function () {
+      var g = layers[key];
+      var on = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', on ? 'false' : 'true');
+      if (on) { map.removeLayer(g); }
+      else { g.addTo(map); if (key === 'zonas') g.bringToBack(); }
+    });
+  });
+  $('recenter').addEventListener('click', function () {
+    map.fitBounds(L.latLngBounds(CAP_BOUNDS), { padding: [10, 10] });
+  });
+
+  window.addEventListener('resize', function () { map.invalidateSize(); });
+  refreshSapsMarkers();
+}
+
+/* ========================= Exportar CSV ========================= */
+$('csv').addEventListener('click', function () {
+  if (!rows.length) return;
+  var lines = [['SAPS', 'Zona', 'Período', 'Rango etario', 'Consultas'].join(';')].concat(
+    rows.map(function (x) {
+      return [x.saps, x.zona || '', x.periodo, x.rango_etario || SIN_RANGO, x.consulta_cantidad]
+        .map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';');
+    })
+  );
+  var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'consultas-embarazadas-corrientes.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+});
+
+/* ========================= Orquestación ========================= */
+function render() {
+  rows = filtered();
+  renderKpis();
+  renderCharts();
+  renderTable();
+  renderDerived();
+  renderHeat();
+  if (map) refreshSapsMarkers();
+}
+['fSaps', 'fAge', 'fDate'].forEach(function (id) {
+  $(id).addEventListener('change', render);
+});
+$('reset').addEventListener('click', function () {
+  $('fSaps').value = ''; $('fAge').value = ''; $('fDate').value = '';
+  render();
+});
+$('detailToggle').addEventListener('click', function () {
+  var open = this.getAttribute('aria-expanded') === 'true';
+  this.setAttribute('aria-expanded', String(!open));
+  $('detailBody').hidden = open;
+});
+
+applyTheme(false);
+
+if (!CONSULTAS.length) {
+  $('status').textContent = 'Sin datos de consultas';
+} else {
+  var totalGeneral = CONSULTAS.reduce(function (a, x) { return a + Number(x.consulta_cantidad || 0); }, 0);
+  $('status').textContent = fmt(totalGeneral) + ' consultas';
+}
+
+initMap();
+render();
+})();
+</script>
+</body>
+</html>
