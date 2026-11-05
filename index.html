@@ -118,6 +118,8 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 
 .mapcard{padding:0;overflow:hidden}
 .maphead{padding:17px 18px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.mapheadtitle{position:relative;min-width:0}
+.mapheadtitle .tip{z-index:1200}
 .mapactions{display:flex;gap:7px;flex-wrap:wrap}
 .mapbtn{border:1px solid var(--line);background:var(--panel-2);color:var(--ink-soft);border-radius:6px;padding:8px 10px;font-size:12px;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .mapbtn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent)}
@@ -153,6 +155,9 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 .links a{font-size:13px;word-break:break-word;display:inline-flex;gap:7px;align-items:flex-start;line-height:1.5}
 .links a::before{content:"↗";color:var(--muted);flex:none}
 .footbar{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.ghlink{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--ink-soft);text-decoration:none}
+.ghlink:hover{color:var(--accent);text-decoration:underline}
+.ghlink svg{width:14px;height:14px;flex:none}
 
 .leaflet-popup-content{font-size:13px;margin:11px 13px}
 .popup-title{font-weight:800;margin-bottom:3px;color:#1b1b1b}
@@ -174,6 +179,24 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 .k4{grid-template-columns:repeat(4,1fr)}
 .sechead{margin:18px 2px 8px;font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent)}
 .sechead small{font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:6px}
+
+/* ---------- Comparación ASPO / DISPO ---------- */
+.stagecard{padding:16px 18px}
+.stagehead{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.stagemetrics{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.stageitem{min-width:104px}
+.stagelbl{display:block;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.stageitem strong{display:block;font-size:23px;line-height:1.2;letter-spacing:-.5px}
+.stagehint{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
+.stagearrow{color:var(--muted);font-size:18px;line-height:1}
+.stagechange{padding-left:16px;border-left:1px solid var(--line)}
+.stagechange strong.up{color:var(--accent)}
+.stagechange strong.down{color:var(--chart-4)}
+.stagenote{font-size:12px;color:var(--muted);line-height:1.55;margin:10px 0 0}
+.bandkey{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.bandkey.aspo{background:var(--slate)}
+.bandkey.dispo{background:var(--chart-3)}
+
 .heat{border-collapse:separate;border-spacing:0;font-size:12px}
 .heat th,.heat td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
 .heat th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-size:10px;text-transform:uppercase;z-index:2}
@@ -200,6 +223,12 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
   .mapwrap{height:430px}
   .kpi .num{font-size:22px}
   h1{font-size:24px}
+  .stagehead{align-items:flex-start;flex-direction:column;gap:12px}
+  .stagemetrics{width:100%;gap:12px;justify-content:space-between}
+  .stageitem{min-width:0}
+  .stageitem strong{font-size:20px}
+  .stagearrow{display:none}
+  .stagechange{padding-left:10px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -245,7 +274,7 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 <div class="sechead">Lectura del período <small>respetan los filtros de SAPS y edad</small></div>
 <section class="kpis k4" aria-label="Indicadores derivados">
   <div class="panel kpi"><div class="lbl">Caída mar–jun (ASPO)</div><div class="num" id="dAspo">—</div><div class="hint" id="dAspoH"></div></div>
-  <div class="panel kpi"><div class="lbl">Recuperación jul–sep</div><div class="num" id="dRec">—</div><div class="hint" id="dRecH"></div></div>
+  <div class="panel kpi"><div class="lbl">Recuperación jul–sep (DISPO)</div><div class="num" id="dRec">—</div><div class="hint" id="dRecH"></div></div>
   <div class="panel kpi tip-host">
     <div class="lbl">SAPS que informan
       <span class="tipwrap">
@@ -264,21 +293,49 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 <section class="grid">
   <article class="panel card">
     <h2>Evolución de consultas</h2>
-    <div class="note contextnote">Cantidad mensual de consultas dentro de los filtros seleccionados.
+    <div class="note contextnote">Cantidad mensual de consultas dentro de los filtros seleccionados. Las bandas marcan el ASPO y el DISPO.
       <span class="tipwrap">
-        <button class="tiptrigger icon" type="button" aria-label="Contexto del gráfico de evolución" aria-describedby="aspoTip">
+        <button class="tiptrigger icon" type="button" aria-label="Períodos ASPO y DISPO del gráfico de evolución" aria-describedby="aspoTip">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
         </button>
-        <span class="tip" role="tooltip" id="aspoTip">La banda gris marca el <b>ASPO</b> (aislamiento obligatorio, desde el 20/03/2020). El descenso de marzo coincide con la pandemia, pero también con una caída de los SAPS que cargaron datos (<b>línea punteada</b>): con estos datos no se puede separar un efecto del otro.</span>
+        <span class="tip" role="tooltip" id="aspoTip">La banda gris marca el <b>ASPO</b> (DNU 297/2020) desde el 20/03/2020 hasta junio. La naranja marca el <b>DISPO</b> (DNU 520/2020), vigente desde junio y graficado desde julio. La caída de marzo y la suba de julio también coinciden con cambios en los SAPS que informaron (<b>línea punteada</b>): no se pueden separar del todo ambos efectos.</span>
       </span>
     </div>
-    <div class="chart"><canvas id="cMonthly" role="img" aria-label="Gráfico de evolución mensual de consultas y de SAPS que informaron"></canvas></div>
+    <div class="chart"><canvas id="cMonthly" role="img" aria-label="Gráfico de evolución mensual de consultas, con bandas ASPO y DISPO, y SAPS que informaron"></canvas></div>
   </article>
 
   <article class="panel card">
     <h2>Distribución por edad</h2>
     <div class="note">Consultas y porcentaje sobre el total, por rango etario.</div>
     <div class="chart"><canvas id="cAges" role="img" aria-label="Gráfico de distribución por rango etario"></canvas></div>
+  </article>
+
+  <article class="panel card wide stagecard" aria-label="Mejora de las consultas con el DISPO">
+    <div class="stagehead">
+      <div>
+        <h2>Mejora con el DISPO</h2>
+        <div class="note" style="margin:2px 0 0">Promedio mensual de consultas por tramo. Usa los filtros de SAPS y edad, no el de mes.</div>
+      </div>
+      <div class="stagemetrics" aria-live="polite">
+        <div class="stageitem">
+          <span class="stagelbl"><i class="bandkey aspo" aria-hidden="true"></i>ASPO · mar–jun</span>
+          <strong id="pAspo">—</strong>
+          <span class="stagehint">consultas/mes</span>
+        </div>
+        <div class="stagearrow" aria-hidden="true">→</div>
+        <div class="stageitem">
+          <span class="stagelbl"><i class="bandkey dispo" aria-hidden="true"></i>DISPO · jul–sep</span>
+          <strong id="pDispo">—</strong>
+          <span class="stagehint">consultas/mes</span>
+        </div>
+        <div class="stageitem stagechange">
+          <span class="stagelbl">Variación</span>
+          <strong id="pDelta">—</strong>
+          <span class="stagehint">DISPO vs. ASPO</span>
+        </div>
+      </div>
+    </div>
+    <p class="stagenote" id="pNote">—</p>
   </article>
 
   <article class="panel card">
@@ -301,8 +358,15 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
 
   <article class="panel wide mapcard">
     <div class="maphead">
-      <div>
-        <h2>Mapa de establecimientos · Capital</h2>
+      <div class="mapheadtitle">
+        <h2>Mapa de establecimientos · Capital
+          <span class="tipwrap">
+            <button class="tiptrigger icon" type="button" aria-label="Cobertura y lectura del mapa" aria-describedby="mapTip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+            </button>
+            <span class="tip" role="tooltip" id="mapTip">37 SAPS en el catálogo: 30 con consultas en ene–sep 2020 y 7 sin registros. La falta de datos no equivale a cero atenciones; los 30 con consultas están georreferenciados. El tamaño de cada punto de SAPS refleja las consultas del filtro activo.</span>
+          </span>
+        </h2>
         <div class="note" style="margin:3px 0 0">Vista acotada al ejido urbano. Los CAPS, hospitales y centros privados se agrupan al alejar el zoom. El tamaño de los puntos de SAPS refleja las consultas del filtro activo.</div>
       </div>
       <div class="mapactions" role="group" aria-label="Capas del mapa">
@@ -407,18 +471,19 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
         <li>Porcentaje etario = consultas del rango ÷ total filtrado (21–39: 1.077 ÷ 1.420 ≈ 76%).</li>
         <li>Ranking: los 10 SAPS con más consultas de la selección.</li>
         <li>Caída = promedio mensual mar–jun ÷ promedio ene–feb − 1. Recuperación = promedio jul–sep ÷ promedio ene–feb.</li>
+        <li>Mejora con el DISPO = promedio mensual jul–sep ÷ promedio mar–jun − 1.</li>
         <li>SAPS que informan = SAPS con al menos una consulta en el mes. Adolescentes = (12–15 + 16–20) ÷ total.</li>
       </ul>
     </div>
     <div>
       <h3>Supuestos</h3>
-      <p>Cada fila es un agregado mensual por SAPS y rango etario, no una consulta individual. Las filas repetidas idénticas se consideran errores de carga (se conserva una) y la fila sin rango etario se descartó. Se asume que la ausencia de fila en un mes significa que el SAPS no informó, no que no atendió. El ASPO rige desde el 20/03/2020 (DNU 297/2020); la banda del gráfico se extiende hasta el final de la serie.</p>
+      <p>Cada fila es un agregado mensual por SAPS y rango etario, no una consulta individual. Las filas repetidas idénticas se consideran errores de carga (se conserva una) y la fila sin rango etario se descartó. Se asume que la ausencia de fila en un mes significa que el SAPS no informó, no que no atendió. El ASPO rige desde el 20/03/2020 (DNU 297/2020) y se extiende hasta junio. El DNU 520/2020 (junio) habilita el DISPO; en la serie mensual se grafica desde julio, cuando termina el ASPO. Las bandas del gráfico reflejan ambos tramos.</p>
     </div>
     <div>
       <h3>Límites</h3>
       <ul>
         <li>Solo enero–septiembre de 2020.</li>
-        <li>La caída de marzo mezcla ASPO y menor cantidad de SAPS que informan; no se pueden separar.</li>
+        <li>La caída de marzo mezcla ASPO y menor cantidad de SAPS que informan; no se pueden separar. La mejora de julio–septiembre también coincide con más SAPS informando.</li>
         <li>No se verificó si el archivo cubre todas las consultas de la capital: 158 por mes es poco y el portal no lo aclara. Que informen menos SAPS con los meses sugiere carga parcial.</li>
         <li>Los 30 SAPS con consultas tienen coordenadas y se muestran en el mapa.</li>
         <li>Las fuentes no traen población ni barrios, por lo que no se calcularon consultas por 1.000 mujeres en edad fértil ni población a menos de 1 km de un SAPS.</li>
@@ -427,6 +492,10 @@ h1{font-size:30px;margin:5px 0 4px;letter-spacing:-.7px}
   </div>
   <div class="footbar">
     <span>Dashboard de Salud Materna · Ciudad de Corrientes</span>
+    <a class="ghlink" href="https://github.com/GuidoMaidana/Dashboard-Embarazadas-v4" target="_blank" rel="noopener noreferrer" aria-label="Proyecto en github (se abre en una pestaña nueva)">
+      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      <span>Proyecto en github</span>
+    </a>
   </div>
 </section>
 
@@ -581,20 +650,43 @@ function renderCharts() {
   rows.forEach(function (x) {
     if (Number(x.consulta_cantidad) > 0) { var m = x.fecha_iso.slice(0, 7); (rep[m] = rep[m] || {})[x.saps] = 1; }
   });
-  var aspoIdx = ml.indexOf('2020-03');
-  var aspoBand = { id: 'aspo', beforeDatasetsDraw: function (ch) {
-    if (aspoIdx < 0) return;
+  var periods = [
+    { key: 'aspo', from: '2020-03', to: '2020-06', label: 'ASPO', sub: '20/03–jun',
+      fill: css('--slate') + '26', labelColor: css('--ink-soft') },
+    { key: 'dispo', from: '2020-07', to: '2020-09', label: 'DISPO', sub: 'jul–sep',
+      fill: css('--chart-3') + '24', labelColor: css('--chart-3') }
+  ];
+  var periodBands = { id: 'periodos', beforeDatasetsDraw: function (ch) {
     var x = ch.scales.x, a = ch.chartArea, ctx = ch.ctx;
-    var step = ml.length > 1 ? x.getPixelForValue(1) - x.getPixelForValue(0) : a.right - a.left;
-    var x0 = Math.max(a.left, x.getPixelForValue(aspoIdx) - step / 2);
-    ctx.save(); ctx.fillStyle = css('--slate') + '26'; ctx.fillRect(x0, a.top, a.right - x0, a.bottom - a.top);
-    ctx.fillStyle = css('--ink-soft'); ctx.font = '700 11px ' + Chart.defaults.font.family;
-    ctx.textBaseline = 'top'; ctx.fillText('ASPO desde 20/03', x0 + 6, a.top + 5); ctx.restore();
+    var step = ml.length > 1 ? x.getPixelForValue(1) - x.getPixelForValue(0) : (a.right - a.left);
+    periods.forEach(function (p) {
+      var idxs = [];
+      ml.forEach(function (m, i) { if (m >= p.from && m <= p.to) idxs.push(i); });
+      if (!idxs.length) return;
+      var x0 = Math.max(a.left, x.getPixelForValue(idxs[0]) - step / 2);
+      var x1 = Math.min(a.right, x.getPixelForValue(idxs[idxs.length - 1]) + step / 2);
+      if (x1 <= x0) return;
+      ctx.save();
+      ctx.fillStyle = p.fill;
+      ctx.fillRect(x0, a.top, x1 - x0, a.bottom - a.top);
+      if (x1 - x0 > 54) {
+        ctx.fillStyle = p.labelColor;
+        ctx.font = '700 11px ' + Chart.defaults.font.family;
+        ctx.textBaseline = 'top';
+        ctx.fillText(p.label, x0 + 6, a.top + 5);
+        if (x1 - x0 > 92) {
+          ctx.fillStyle = css('--muted');
+          ctx.font = '600 10px ' + Chart.defaults.font.family;
+          ctx.fillText(p.sub, x0 + 6, a.top + 20);
+        }
+      }
+      ctx.restore();
+    });
   } };
   kill('monthly');
   charts.monthly = new Chart($('cMonthly'), {
     type: 'line',
-    plugins: [aspoBand],
+    plugins: [periodBands],
     data: {
       labels: ml.map(mesCorto),
       datasets: [{
@@ -749,6 +841,59 @@ function renderDerived() {
   var tot = sum(rows), teen = sum(rows.filter(function (x) { return Number(x.edad_min) <= 20; }));
   $('dTeen').textContent = tot ? (teen / tot * 100).toFixed(0) + '%' : '—';
   $('dTeenH').textContent = tot ? fmt(teen) + ' de ' + fmt(tot) + ' consultas' : 'sin consultas';
+}
+
+function renderStages() {
+  var r0 = filtered(true), mm = {};
+  r0.forEach(function (x) {
+    var m = x.fecha_iso.slice(5, 7);
+    mm[m] = (mm[m] || 0) + Number(x.consulta_cantidad || 0);
+  });
+  function mean(months) {
+    var v = months.filter(function (m) { return mm[m] != null; }).map(function (m) { return mm[m]; });
+    return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null;
+  }
+  var aspo = mean(['03', '04', '05', '06']);
+  var dispo = mean(['07', '08', '09']);
+  var delta = (aspo && aspo > 0 && dispo != null) ? dispo / aspo - 1 : null;
+
+  $('pAspo').textContent = aspo != null ? fmt(aspo) : '—';
+  $('pDispo').textContent = dispo != null ? fmt(dispo) : '—';
+  var deltaEl = $('pDelta');
+  deltaEl.textContent = delta != null
+    ? (delta >= 0 ? '+' : '−') + Math.round(Math.abs(delta) * 100) + '%'
+    : '—';
+  deltaEl.className = delta == null ? '' : (delta >= 0 ? 'up' : 'down');
+
+  var sapsByMonth = {};
+  r0.forEach(function (x) {
+    var m = x.fecha_iso.slice(5, 7);
+    if (Number(x.consulta_cantidad) > 0) { (sapsByMonth[m] = sapsByMonth[m] || {})[x.saps] = 1; }
+  });
+  function sapsMean(months) {
+    var v = months.filter(function (m) { return sapsByMonth[m]; })
+      .map(function (m) { return Object.keys(sapsByMonth[m]).length; });
+    return v.length ? v.reduce(function (a, b) { return a + b; }, 0) / v.length : null;
+  }
+  var sAspo = sapsMean(['03', '04', '05', '06']);
+  var sDispo = sapsMean(['07', '08', '09']);
+
+  if (aspo == null || dispo == null) {
+    $('pNote').textContent = 'La selección no tiene datos en uno de los dos tramos; no se puede comparar el ASPO con el DISPO.';
+    return;
+  }
+  var peak = null;
+  ['07', '08', '09'].forEach(function (m) {
+    if (mm[m] != null && (!peak || mm[m] > peak.v)) peak = { m: m, v: mm[m] };
+  });
+  var tail = mean(['08', '09']);
+  var parts = [];
+  if (peak) parts.push('El mayor volumen del DISPO se registra en ' + mesCorto('2020-' + peak.m) + ' (' + fmt(peak.v) + ' consultas).');
+  if (tail != null) parts.push('Ago–sep promedian ' + fmt(tail) + ' por mes.');
+  if (sAspo != null && sDispo != null) {
+    parts.push('SAPS que informan por mes: ' + sAspo.toFixed(1).replace('.', ',') + ' → ' + sDispo.toFixed(1).replace('.', ',') + '.');
+  }
+  $('pNote').textContent = parts.join(' ');
 }
 function renderHeat() {
   var ms = unique(CONSULTAS.map(function (x) { return x.fecha_iso.slice(0, 7); })).sort(), data = {}, mx = 0;
@@ -968,9 +1113,11 @@ function refreshSapsMarkers() {
       v ? '<b>' + fmt(v) + '</b> consulta' + (v === 1 ? '' : 's') + ' en la selección'
         : 'Sin consultas en la selección actual'));
   });
+  var totalCat = (D.saps || []).length;
+  var conConsultas = Object.keys(totals).length;
   $('mapNote').textContent = sinGeo.size
     ? sinGeo.size + ' SAPS de la base de consultas no tienen coordenadas publicadas'
-    : 'Todos los SAPS con consultas están georreferenciados';
+    : conConsultas + ' de ' + totalCat + ' SAPS con consultas · ' + Math.max(0, totalCat - conConsultas) + ' sin registros en la selección';
 }
 
 function styleMap() {
@@ -1071,6 +1218,7 @@ function render() {
   renderCharts();
   renderTable();
   renderDerived();
+  renderStages();
   renderHeat();
   if (map) refreshSapsMarkers();
 }
